@@ -1,12 +1,13 @@
 import os
 import subprocess
 import sys
+import urllib.request
 
 def install_python():
-    # Download and install Python from python.org
     python_installer = 'python-3.11.2-amd64.exe'
     python_url = f'https://www.python.org/ftp/python/3.11.2/{python_installer}'
-    subprocess.check_call(['powershell', '-Command', f"Invoke-WebRequest -Uri {python_url} -OutFile {python_installer}"])
+    if not os.path.exists(python_installer):
+        urllib.request.urlretrieve(python_url, python_installer)
     subprocess.check_call([python_installer, '/quiet', 'InstallAllUsers=1', 'PrependPath=1'])
     os.remove(python_installer)
 
