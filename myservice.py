@@ -3,7 +3,13 @@ import win32service
 import win32event
 import servicemanager
 import subprocess
-import os
+import logging
+
+logging.basicConfig(
+    filename='C:\\path\\to\\log\\myservice.log',  # Update this path to a valid location
+    level=logging.INFO,
+    format='%(asctime)s - %(levelname)s - %(message)s'
+)
 
 class MyService(win32serviceutil.ServiceFramework):
     _svc_name_ = "URLRedirectService"
@@ -20,14 +26,14 @@ class MyService(win32serviceutil.ServiceFramework):
         if self.process:
             self.process.terminate()
         win32event.SetEvent(self.hWaitStop)
+        logging.info("Service stopped")
 
     def SvcDoRun(self):
-        servicemanager.LogMsg(servicemanager.EVENTLOG_INFORMATION_TYPE,
-                              servicemanager.PYS_SERVICE_STARTED,
-                              (self._svc_name_, ''))
+        logging.info("Service started")
         self.main()
 
     def main(self):
+        logging.info("Running main process")
         self.process = subprocess.Popen(['python', 'monitor_redirect.py'], creationflags=subprocess.CREATE_NEW_CONSOLE)
         self.process.wait()
 
